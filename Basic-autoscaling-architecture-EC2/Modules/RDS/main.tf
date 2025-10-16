@@ -131,6 +131,13 @@ resource "aws_db_instance" "main" {
   }
 }
 
+# Wait for the main RDS instance to be available before creating the read replica
+resource "time_sleep" "wait_for_main_db" {
+  depends_on = [aws_db_instance.main]
+
+  create_duration = "60s"
+}
+
 # Create read replica if enabled
 resource "aws_db_instance" "read_replica" {
   count = var.create_read_replica ? 1 : 0
@@ -146,6 +153,9 @@ resource "aws_db_instance" "read_replica" {
 
   vpc_security_group_ids = [aws_security_group.rds.id]
   db_subnet_group_name   = aws_db_subnet_group.main.name
+  
+  # Explicitly set storage_encrypted to match the main instance
+  storage_encrypted = var.storage_encrypted
 
   # Read replicas don't need multi-AZ
   multi_az = false
@@ -160,8 +170,8 @@ resource "aws_db_instance" "read_replica" {
     Type        = "ReadReplica"
   }
 
-  # Ensure the read replica is created after the main instance
-  depends_on = [aws_db_instance.main]
+  # Ensure the read replica is created after the main instance is fully available
+  depends_on = [aws_db_instance.main, time_sleep.wait_for_main_db]
 }
 
 # IAM role for enhanced monitoring

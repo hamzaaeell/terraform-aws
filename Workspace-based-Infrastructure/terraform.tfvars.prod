@@ -1,0 +1,66 @@
+# AWS Region
+aws_region = "us-east-1"
+
+# Project Name
+project_name = "multi-az-vpc"
+
+# VPC Configuration
+vpc_cidr = "10.0.0.0/16"
+public_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+private_cidrs = ["10.0.10.0/24", "10.0.20.0/24"]
+
+# AutoScaling Group Configuration
+ami_id = ""
+instance_type = "t3.medium"
+key_name = ""
+instance_profile_name = ""
+user_data = <<-EOT
+#!/bin/bash
+apt-get update
+apt-get install -y nginx
+systemctl start nginx
+systemctl enable nginx
+# Create a simple index.html page
+echo "<html><body><h1>Hello from $(hostname -f)</h1><p>This page is served by Nginx on an EC2 instance in the AutoScaling Group</p><p>Environment: prod</p></body></html>" > /var/www/html/index.html
+EOT
+desired_capacity = 4
+max_size = 10
+min_size = 4
+health_check_type = "EC2"
+health_check_grace_period = 300
+spot_price = ""
+
+# RDS Configuration
+allowed_cidr_blocks = ["0.0.0.0/0"]
+engine = "postgres"
+engine_version = "17.2"
+instance_class = "db.t3.medium"
+allocated_storage = 100
+max_allocated_storage = 1000
+storage_type = "gp3"
+storage_encrypted = true
+database_name = "myapp"
+username = "postgres"
+port = 5432
+backup_retention_period = 30
+backup_window = "03:00-04:00"
+maintenance_window = "sun:04:00-sun:05:00"
+multi_az = true
+skip_final_snapshot = false
+final_snapshot_identifier = "multi-az-vpc-prod-final-snapshot"
+deletion_protection = true
+create_read_replica = true
+
+# ALB Configuration
+alb_security_group_cidrs = ["0.0.0.0/0"]
+target_group_port = 80
+target_group_protocol = "HTTP"
+health_check_path = "/"
+health_check_interval = 30
+health_check_timeout = 5
+health_check_healthy_threshold = 3
+health_check_unhealthy_threshold = 3
+health_check_matcher = "200"
+listener_port = 80
+listener_protocol = "HTTP"
+listener_action_type = "forward"
